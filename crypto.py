@@ -74,4 +74,59 @@ def export_to_csv():
         print(f"New file created at {file_path} with timestamp {timestamp}")
 
 
-export_to_csv()
+def read_csv_data(file_path=r'C:\Users\mario\Desktop\PythonProject\crypto.csv'):
+    """
+    Reads cryptocurrency data from a CSV file and returns it as a DataFrame.
+    
+    Args:
+        file_path (str): Path to the CSV file. Defaults to the standard file path.
+        
+    Returns:
+        pandas.DataFrame: DataFrame containing the cryptocurrency data.
+        None: If the file doesn't exist or can't be read.
+    """
+    try:
+        if os.path.exists(file_path):
+            # Read the CSV file into a DataFrame
+            df = pd.read_csv(file_path)
+            return df
+        else:
+            print(f"File not found at {file_path}")
+            return None
+    except Exception as e:
+        print(f"Error reading CSV file: {e}")
+        return None
+
+def top_5_coins_prices(file_path=r'C:\Users\mario\Desktop\PythonProject\crypto.csv'):
+    df = read_csv_data(file_path)
+    temp_df = df.tail(10) #dataframe that consists only of the latest web scrape info
+    return temp_df.head(5)[['Coin', 'Price']]
+
+def top_5_coins_market_caps(file_path=r'C:\Users\mario\Desktop\PythonProject\crypto.csv'):
+    df = read_csv_data(file_path)
+    temp_df = df.tail(10)
+    return temp_df.head(5)[['Coin', 'Market Cap']]
+
+def top_5_coins_24h_change(file_path=r'C:\Users\mario\Desktop\PythonProject\crypto.csv'):
+    df = read_csv_data(file_path)
+    temp_df = df.tail(10)
+    return temp_df.head(5)[['Coin', '24h']]
+
+def top_5_coins_7d_change(file_path=r'C:\Users\mario\Desktop\PythonProject\crypto.csv'):
+    df = read_csv_data(file_path)
+    temp_df = df.tail(10)
+    return temp_df.head(5)[['Coin', '7d']]
+
+def get_coin_data_for_dropdown(file_path=r'C:\Users\mario\Desktop\PythonProject\crypto.csv'):
+    """
+    Returns coin names and IDs for dropdown menus with values.
+    """
+    df = read_csv_data(file_path)
+    if df is not None:
+        # Get latest data
+        latest_timestamp = df['Timestamp'].max()
+        latest_df = df[df['Timestamp'] == latest_timestamp]
+        # Return dictionary with name as key and other data as needed
+        return {row['Coin']: row['#'] for _, row in latest_df.iterrows()}
+    return None
+
