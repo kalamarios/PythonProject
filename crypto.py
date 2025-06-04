@@ -129,4 +129,3 @@ def get_coin_data_for_dropdown(file_path=r'C:\Users\mario\Desktop\PythonProject\
         # Return dictionary with name as key and other data as needed
         return {row['Coin']: row['#'] for _, row in latest_df.iterrows()}
     return None
-
