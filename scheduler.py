@@ -1,6 +1,6 @@
 import schedule
 import time
-from scraper import export_to_csv  # Change 'your_main_module'!
+from scraper import export_to_csv
 
 def job():
     export_to_csv()
