@@ -8,11 +8,17 @@ from datetime import datetime
 current_time = datetime.now()
 timestamp = current_time.strftime("%Y-%m-%d %H:%M:%S")
 
+# Global variable to store the latest scraped data
+latest_scraped_data = None
+
+
 def scrape_data():
     """
     Scrapes cryptocurrency data from Coinlore website and returns it as a DataFrame.
     Includes current timestamp with each row of data.
     """
+    global latest_scraped_data
+
     # Target URL for cryptocurrency data
     url = 'https://www.coinlore.com/'
     page = requests.get(url)
@@ -49,15 +55,22 @@ def scrape_data():
         length = len(df)
         df.loc[length] = individual_row_data
 
+    # Store the scraped data globally
+    latest_scraped_data = df
     return df
 
 def export_to_csv():
     """
-    Exports scraped cryptocurrency data to a CSV file.
+    Exports the latest scraped cryptocurrency data to a CSV file.
     If file exists, appends new data; otherwise creates a new file.
     """
-    # Get cryptocurrency data
-    df = scrape_data()
+    global latest_scraped_data
+
+    if latest_scraped_data is None:
+        print("No data to export. Please scrape data first.")
+        return
+
+
     file_path = r'C:\Users\mario\Desktop\PythonProject\crypto.csv'
     
     # Handle file operations based on whether file already exists
@@ -66,11 +79,11 @@ def export_to_csv():
         pd.read_csv(file_path)
 
         # Append new data to the existing CSV file
-        df.to_csv(file_path, mode='a', header=False, index=False)
+        latest_scraped_data.to_csv(file_path, mode='a', header=False, index=False)
         print(f"Data appended to {file_path} with timestamp {timestamp}")
     else:
         # File doesn't exist - create new file with headers
-        df.to_csv(file_path, index=False)
+        latest_scraped_data.to_csv(file_path, index=False)
         print(f"New file created at {file_path} with timestamp {timestamp}")
 
 
