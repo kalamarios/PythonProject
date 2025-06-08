@@ -54,65 +54,55 @@ def show_market_cap_pie():
             return
 
         # Clean and convert market cap data
-        market_caps = []
-        coin_names = []
+        valid_market_caps = []
+        valid_coin_names = []
 
         for _, row in top_coins.iterrows():
-            market_cap_raw = str(row['Market Cap']).replace('$', '').replace(',', '')
+            # More robust string cleaning
+            market_cap_raw = str(row['Market Cap']).strip()
+            
+            # Remove dollar sign and commas, handle None/NaN cases
+            if market_cap_raw in ['None', 'nan', '', 'N/A']:
+                print(f"Skipping {row['Coin']}: no market cap data")
+                continue
+                
+            market_cap_clean = market_cap_raw.replace('$', '').replace(',', '').strip()
 
             try:
-                if market_cap_raw.endswith('B'):
-                    value = float(market_cap_raw[:-1]) * 1_000_000_000
-                elif market_cap_raw.endswith('M'):
-                    value = float(market_cap_raw[:-1]) * 1_000_000
-                elif market_cap_raw.endswith('K'):
-                    value = float(market_cap_raw[:-1]) * 1_000
+                # Handle different suffixes (case-insensitive)
+                if market_cap_clean.upper().endswith('B'):
+                    value = float(market_cap_clean[:-1]) * 1_000_000_000
+                elif market_cap_clean.upper().endswith('M'):
+                    value = float(market_cap_clean[:-1]) * 1_000_000
+                elif market_cap_clean.upper().endswith('K'):
+                    value = float(market_cap_clean[:-1]) * 1_000
+                elif market_cap_clean.upper().endswith('T'):  # Handle trillions too
+                    value = float(market_cap_clean[:-1]) * 1_000_000_000_000
                 else:
-                    value = float(market_cap_raw)
+                    # Try to convert directly if no suffix
+                    value = float(market_cap_clean)
 
                 if value > 0:
-                    market_caps.append(value)
-                    coin_names.append(row['Coin'])
+                    valid_market_caps.append(value)
+                    valid_coin_names.append(row['Coin'])
+                    print(f"Successfully processed {row['Coin']}: {market_cap_raw} -> {value:,.0f}")
+                else:
+                    print(f"Skipping {row['Coin']}: negative or zero value")
 
-            except (ValueError, TypeError):
-                print(f"Skipping {row['Coin']}: invalid market cap data")
+            except (ValueError, TypeError) as e:
+                print(f"Skipping {row['Coin']}: invalid market cap '{market_cap_raw}' - {e}")
                 continue
 
-        if not market_caps:
+        if not valid_market_caps:
             print("No valid market cap data found")
             return
 
-        # Create pie chart
+        print(f"Creating pie chart with {len(valid_market_caps)} valid entries")
+
+        # Create pie chart with enhanced styling
         plt.figure(figsize=(10, 8))
         colors = ['#FF6B35', '#F7931E', '#FFD23F', '#06FFA5', '#4ECDC4']
 
-        wedges, texts, autotexts = plt.pie(
-            market_caps,
-            labels=coin_names,
-            autopct='%1.1f%%',
-            colors=colors[:len(coin_names)],
-            startangle=90,
-            explode=[0.05] * len(coin_names)
-        )
-
-        plt.title('Market Cap Distribution - Top Cryptos', fontsize=16, fontweight='bold')
-        plt.axis('equal')
-        plt.show()
-
-        # Print summary
-        print(f"\nPie chart created with {len(coin_names)} cryptocurrencies")
-        for name, cap in zip(coin_names, market_caps):
-            if cap >= 1_000_000_000:
-                print(f"  {name}: ${cap / 1_000_000_000:.1f}B")
-            elif cap >= 1_000_000:
-                print(f"  {name}: ${cap / 1_000_000:.1f}M")
-            else:
-                print(f"  {name}: ${cap:,.0f}")
-
-    except Exception as e:
-        print(f"Error creating pie chart: {e}")
-
-        # Create pie chart with better text positioning
         wedges, texts, autotexts = plt.pie(
             valid_market_caps,
             labels=None,  # Remove labels from pie chart to avoid overlap
@@ -140,7 +130,9 @@ def show_market_cap_pie():
         # Create a comprehensive legend with market cap values
         legend_labels = []
         for name, cap in zip(valid_coin_names, valid_market_caps):
-            if cap >= 1_000_000_000:
+            if cap >= 1_000_000_000_000:
+                legend_labels.append(f"{name}: ${cap / 1_000_000_000_000:.1f}T")
+            elif cap >= 1_000_000_000:
                 legend_labels.append(f"{name}: ${cap / 1_000_000_000:.1f}B")
             elif cap >= 1_000_000:
                 legend_labels.append(f"{name}: ${cap / 1_000_000:.1f}M")
@@ -169,7 +161,9 @@ def show_market_cap_pie():
         # Print summary
         print(f"\nPie chart created successfully with {len(valid_coin_names)} coins:")
         for name, cap in zip(valid_coin_names, valid_market_caps):
-            if cap >= 1_000_000_000:
+            if cap >= 1_000_000_000_000:
+                print(f"  {name}: ${cap / 1_000_000_000_000:.1f}T")
+            elif cap >= 1_000_000_000:
                 print(f"  {name}: ${cap / 1_000_000_000:.1f}B")
             elif cap >= 1_000_000:
                 print(f"  {name}: ${cap / 1_000_000:.1f}M")
