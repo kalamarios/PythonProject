@@ -4,10 +4,6 @@ import pandas as pd
 import os
 from datetime import datetime
 
-# Get current timestamp for data tracking
-current_time = datetime.now()
-timestamp = current_time.strftime("%Y-%m-%d %H:%M:%S")
-
 # Global variable to store the latest scraped data
 latest_scraped_data = None
 
@@ -18,6 +14,10 @@ def scrape_data():
     Includes current timestamp with each row of data.
     """
     global latest_scraped_data
+
+    # Get current timestamp for data tracking
+    current_time = datetime.now()
+    timestamp = current_time.strftime("%Y-%m-%d %H:%M:%S")
 
     # Target URL for cryptocurrency data
     url = 'https://www.coinlore.com/'
@@ -70,6 +70,11 @@ def export_to_csv():
         print("No data to export. Please scrape data first.")
         return
 
+    # Get the timestamp from the latest scraped data
+    if not latest_scraped_data.empty:
+        timestamp = latest_scraped_data['Timestamp'].iloc[0]
+    else:
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     file_path = r'C:\Users\mario\Desktop\PythonProject\crypto.csv'
     

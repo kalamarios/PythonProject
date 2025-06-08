@@ -3,54 +3,11 @@ from matplotlib import pyplot as plt
 
 # Use functions from scraper
 from scraper import (
-    read_csv_data,
     top_5_coins_prices,
     top_5_coins_market_caps,
     top_5_coins_24h_change,
     top_5_coins_7d_change
 )
-
-#load data from csv (keeping this for statistics function)
-def load_crypto_data(csv_file='crypto.csv'):
-    
-    try:
-        df = pd.read_csv(csv_file)
-        df = df.tail(10).copy()
-        
-        # clean in price to just have the number
-        df['Price_Clean'] = df['Price'].str.replace('$', '').str.replace(',', '')
-        df['Price_Clean'] = pd.to_numeric(df['Price_Clean'], errors='coerce')
-        
-        # clean in mararketcap to just have the number
-        df['MarketCap_Clean'] = df['Market Cap'].str.replace('$', '').str.replace(',', '')
-        
-        # convert billions, millions, thousands to actual numbers
-        market_cap_values = []
-        for value in df['MarketCap_Clean']:
-            try:
-                if 'B' in str(value):                   
-                    market_cap_values.append(float(str(value).replace('B', '')) * 1_000_000_000)
-                elif 'M' in str(value):                 
-                    market_cap_values.append(float(str(value).replace('M', '')) * 1_000_000)
-                elif 'K' in str(value):                  
-                    market_cap_values.append(float(str(value).replace('K', '')) * 1_000)
-                else:                                    
-                    market_cap_values.append(float(str(value)))
-            except:
-                market_cap_values.append(0)             
-        
-        df['MarketCap_Clean'] = market_cap_values
-        
-        # in changes array delete the precentage
-        df['Change_24h'] = pd.to_numeric(df['24h'].str.replace('%', ''), errors='coerce')
-        df['Change_7d'] = pd.to_numeric(df['7d'].str.replace('%', ''), errors='coerce')
-        
-        print(f" Loaded {len(df)} cryptos")
-        return df
-        
-    except Exception as e:
-        print(f" Error while loading: {e}")
-        return None
 
 #bar chart for the 5 top prices
 def show_barchart():
@@ -93,106 +50,67 @@ def show_market_cap_pie():
         top_coins = top_5_coins_market_caps()
 
         if top_coins is None or top_coins.empty:
-            print("Could not get top 5 market cap data")
+            print("Could not get market cap data")
             return
 
-        print("Raw market cap data:")
-        print(top_coins[['Coin', 'Market Cap']].head())
+        # Clean and convert market cap data
+        market_caps = []
+        coin_names = []
 
-        # Lists to store only valid data
-        valid_market_caps = []
-        valid_coin_names = []
+        for _, row in top_coins.iterrows():
+            market_cap_raw = str(row['Market Cap']).replace('$', '').replace(',', '')
 
-        # Process each coin and only keep valid ones
-        for i, row in top_coins.iterrows():
             try:
-                # Get the market cap value and handle it more carefully
-                market_cap_raw = row.get('Market Cap', '')
-
-                # Skip if empty or NaN
-                if pd.isna(market_cap_raw) or market_cap_raw == '' or market_cap_raw == 'N/A':
-                    print(f"Skipping {row.get('Coin', 'Unknown')}: No market cap data")
-                    continue
-
-                # Convert to string and clean it
-                market_cap_str = str(market_cap_raw).strip()
-
-                # Remove $ and commas
-                market_cap_str = market_cap_str.replace('$', '').replace(',', '')
-
-                # Initialize converted value
-                converted_value = 0
-
-                # Handle conversion with proper decimal support
-                if market_cap_str.upper().endswith('B'):
-                    # Remove 'B' and convert to float, then multiply by billion
-                    number_part = market_cap_str[:-1].strip()
-                    if number_part:  # Make sure we have something to convert
-                        converted_value = float(number_part) * 1_000_000_000
-                elif market_cap_str.upper().endswith('M'):
-                    # Remove 'M' and convert to float, then multiply by million
-                    number_part = market_cap_str[:-1].strip()
-                    if number_part:
-                        converted_value = float(number_part) * 1_000_000
-                elif market_cap_str.upper().endswith('K'):
-                    # Remove 'K' and convert to float, then multiply by thousand
-                    number_part = market_cap_str[:-1].strip()
-                    if number_part:
-                        converted_value = float(number_part) * 1_000
+                if market_cap_raw.endswith('B'):
+                    value = float(market_cap_raw[:-1]) * 1_000_000_000
+                elif market_cap_raw.endswith('M'):
+                    value = float(market_cap_raw[:-1]) * 1_000_000
+                elif market_cap_raw.endswith('K'):
+                    value = float(market_cap_raw[:-1]) * 1_000
                 else:
-                    # No suffix, try to convert directly to float
-                    if market_cap_str:  # Make sure string is not empty
-                        converted_value = float(market_cap_str)
+                    value = float(market_cap_raw)
 
-                # Only add if value is positive and valid
-                if converted_value > 0:
-                    valid_market_caps.append(converted_value)
-                    valid_coin_names.append(row['Coin'])
-                    print(f"Successfully processed {row['Coin']}: '{market_cap_raw}' -> {converted_value:,.0f}")
-                else:
-                    print(f"Skipping {row.get('Coin', 'Unknown')}: Converted value is 0 or negative")
+                if value > 0:
+                    market_caps.append(value)
+                    coin_names.append(row['Coin'])
 
-            except (ValueError, TypeError, KeyError, AttributeError) as e:
-                print(
-                    f"Warning: Could not process market cap for {row.get('Coin', 'Unknown')}: '{market_cap_raw}' - Error: {e}")
-                continue
-            except Exception as e:
-                print(f"Unexpected error processing {row.get('Coin', 'Unknown')}: {e}")
+            except (ValueError, TypeError):
+                print(f"Skipping {row['Coin']}: invalid market cap data")
                 continue
 
-        # Check if we have any valid data to plot
-        if len(valid_market_caps) == 0:
-            print("No valid market cap data found for pie chart")
-            print("\nTrying alternative approach - using price data instead...")
+        if not market_caps:
+            print("No valid market cap data found")
+            return
 
-            # Fallback: try to use price data if market cap fails
-            try:
-                price_data = top_5_coins_prices()
-                if price_data is not None and not price_data.empty:
-                    for i, row in price_data.iterrows():
-                        try:
-                            price_str = str(row['Price']).replace('$', '').replace(',', '')
-                            price_val = float(price_str)
-                            if price_val > 0:
-                                valid_market_caps.append(price_val)
-                                valid_coin_names.append(f"{row['Coin']} (Price)")
-                        except:
-                            continue
-
-                    if len(valid_market_caps) == 0:
-                        print("No valid data available for chart")
-                        return
-                    else:
-                        print(f"Using price data instead with {len(valid_market_caps)} coins")
-            except:
-                print("Could not create chart with alternative data")
-                return
-
-        print(f"\nCreating pie chart with {len(valid_coin_names)} coins")
-
-        # Create the pie chart with only valid data
-        plt.figure(figsize=(14, 10))
+        # Create pie chart
+        plt.figure(figsize=(10, 8))
         colors = ['#FF6B35', '#F7931E', '#FFD23F', '#06FFA5', '#4ECDC4']
+
+        wedges, texts, autotexts = plt.pie(
+            market_caps,
+            labels=coin_names,
+            autopct='%1.1f%%',
+            colors=colors[:len(coin_names)],
+            startangle=90,
+            explode=[0.05] * len(coin_names)
+        )
+
+        plt.title('Market Cap Distribution - Top Cryptos', fontsize=16, fontweight='bold')
+        plt.axis('equal')
+        plt.show()
+
+        # Print summary
+        print(f"\nPie chart created with {len(coin_names)} cryptocurrencies")
+        for name, cap in zip(coin_names, market_caps):
+            if cap >= 1_000_000_000:
+                print(f"  {name}: ${cap / 1_000_000_000:.1f}B")
+            elif cap >= 1_000_000:
+                print(f"  {name}: ${cap / 1_000_000:.1f}M")
+            else:
+                print(f"  {name}: ${cap:,.0f}")
+
+    except Exception as e:
+        print(f"Error creating pie chart: {e}")
 
         # Create pie chart with better text positioning
         wedges, texts, autotexts = plt.pie(
@@ -304,26 +222,3 @@ def show_lineplot():
         
     except Exception as e:
         print(f"Error showing price changes: {e}")
-
-
-def show_statistics(df):
-    print("\n" + "="*40)
-    print("Statistics of my cryptos")
-    print("="*40)
-    
-    print(f"Total cryptos: {len(df)}")
-    print(f"Average price: ${df['Price_Clean'].mean():,.2f}")
-    
-    # Most expensive 
-    max_price_idx = df['Price_Clean'].idxmax()
-    print(f"Most expensive: {df.loc[max_price_idx, 'Coin']} (${df['Price_Clean'].max():,.2f})")
-    
-    # Cheapest crypto
-    min_price_idx = df['Price_Clean'].idxmin()
-    print(f"Cheapest: {df.loc[min_price_idx, 'Coin']} (${df['Price_Clean'].min():,.2f})")
-    
-    print(f"\nChanges:")
-    print(f"   Average change in 24 hours: {df['Change_24h'].mean():.2f}%")
-    print(f"   Average change in 7days: {df['Change_7d'].mean():.2f}%")
-    
-    print("="*40)

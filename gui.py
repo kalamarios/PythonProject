@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk, messagebox, filedialog, scrolledtext
+from tkinter import ttk, messagebox, scrolledtext
 
 from scraper import (
     scrape_data,
@@ -8,7 +8,6 @@ from scraper import (
     get_coin_data_for_dropdown,
 
 )
-
 
 from graphs import (
 show_market_cap_pie,
@@ -67,7 +66,7 @@ class CryptocurrencyGUI:
         # To show status with each command
         self.status_bar = tk.Label(
             self.root,
-            text="I am very much Ready! load data if you want to proceed",
+            text="Ready! Load data if you want to proceed",
             relief=tk.SUNKEN,
             anchor=tk.W,
             bg='#bdc3c7',
@@ -117,7 +116,7 @@ class CryptocurrencyGUI:
         selection_frame.pack(fill=tk.X, padx=10, pady=10)
 
         # Dropdown for coin selection
-        tk.Label(selection_frame, text="Επιλέξτε Κρυπτονόμισμα:", bg='light yellow', font=("Times New Roman", 10)).pack(pady=5)
+        tk.Label(selection_frame, text="Choose Crypto:", bg='light yellow', font=("Times New Roman", 10)).pack(pady=5)
 
         self.coin_dropdown = ttk.Combobox(
             selection_frame,
@@ -379,8 +378,8 @@ class CryptocurrencyGUI:
         # Create Treeview
         self.tree = ttk.Treeview(tree_frame, show='headings', height=15)
 
-        # Define columns
-        columns = ['#', 'Coin', 'Price', '24h', '7d', 'Market Cap', 'Volume', 'Timestamp']
+        # Define columns to match the actual CSV column names and order
+        columns = ['#', 'Coin', 'Price', '24h', '1h', '7d', 'Market Cap', '24h Volume', 'Timestamp']
         self.tree['columns'] = columns
 
         # Configure column headings and widths
@@ -389,9 +388,10 @@ class CryptocurrencyGUI:
             'Coin': 100,
             'Price': 100,
             '24h': 80,
+            '1h': 80,
             '7d': 80,
             'Market Cap': 120,
-            'Volume': 120,
+            '24h Volume': 120,
             'Timestamp': 150
         }
 
@@ -416,9 +416,9 @@ class CryptocurrencyGUI:
             selected_coin = self.selected_coin.get()
             if selected_coin:
                 self.filter_data_by_coin(selected_coin)
-                self.update_status(f"Εμφάνιση δεδομένων για: {selected_coin}")
+                self.update_status(f"Show data for: {selected_coin}")
         except Exception as e:
-            self.update_status(f"Σφάλμα κατά την επιλογή νομίσματος: {str(e)}")
+            self.update_status(f"Error during coin selection: {str(e)}")
 
     def filter_data_by_coin(self, coin_name):
         """Filter and display data for selected coin"""
@@ -434,19 +434,20 @@ class CryptocurrencyGUI:
 
         if filtered_data.empty:
             # If no data found, show a message in the first row
-            self.tree.insert('', 'end', values=['', f'Δεν βρέθηκαν δεδομένα για {coin_name}', '', '', '', '', '', ''])
+            self.tree.insert('', 'end', values=['', f'No data found for {coin_name}', '', '', '', '', '', '', ''])
             return
 
-        # Insert filtered data into tree
+        # Insert filtered data into tree - Updated to match CSV column names
         for index, row in filtered_data.iterrows():
             values = [
                 row.get('#', ''),
                 row.get('Coin', ''),
                 row.get('Price', ''),
                 row.get('24h', ''),
+                row.get('1h', ''),
                 row.get('7d', ''),
                 row.get('Market Cap', ''),
-                row.get('Volume', ''),
+                row.get('24h Volume', ''),
                 row.get('Timestamp', '')
             ]
             self.tree.insert('', 'end', values=values)
@@ -456,9 +457,9 @@ class CryptocurrencyGUI:
         try:
             self.populate_data_table()
             self.coin_dropdown.set('')  # Clear selection
-            self.update_status("Εμφάνιση όλων των κρυπτονομισμάτων")
+            self.update_status("Show all coins")
         except Exception as e:
-            self.update_status(f"Σφάλμα κατά την εμφάνιση όλων: {str(e)}")
+            self.update_status(f"Error during showing all coins: {str(e)}")
 
     def load_existing_data(self):
         """Load existing data from CSV file if available"""
@@ -467,11 +468,11 @@ class CryptocurrencyGUI:
             if self.current_data is not None:
                 self.populate_data_table()
                 self.update_coin_dropdown()
-                self.update_status("Δεδομένα φορτώθηκαν επιτυχώς από το αρχείο CSV")
+                self.update_status("Data successfully loaded from CSV file")
             else:
-                self.update_status("Δεν βρέθηκαν υπάρχοντα δεδομένα - Χρησιμοποιήστε 'Συλλογή Νέων Δεδομένων'")
+                self.update_status("No current data found - Use 'Scrape New Data'")
         except Exception as e:
-            self.update_status(f"Σφάλμα κατά τη φόρτωση δεδομένων: {str(e)}")
+            self.update_status(f"Error during data loading: {str(e)}")
 
     def populate_data_table(self):
         """Populate the data table with current data"""
@@ -485,16 +486,17 @@ class CryptocurrencyGUI:
         # Get latest data (last 10 entries)
         latest_data = self.current_data.tail(10)
 
-        # Insert data into tree
+        # Insert data into tree - Updated to match CSV column names
         for index, row in latest_data.iterrows():
             values = [
                 row.get('#', ''),
                 row.get('Coin', ''),
                 row.get('Price', ''),
                 row.get('24h', ''),
+                row.get('1h', ''),
                 row.get('7d', ''),
                 row.get('Market Cap', ''),
-                row.get('Volume', ''),
+                row.get('24h Volume', ''),
                 row.get('Timestamp', '')
             ]
             self.tree.insert('', 'end', values=values)
@@ -508,12 +510,12 @@ class CryptocurrencyGUI:
                 self.coin_dropdown['values'] = coin_names
                 # Don't set a default selection to show all coins initially
         except Exception as e:
-            self.update_status(f"Σφάλμα κατά την ενημέρωση λίστας νομισμάτων: {str(e)}")
+            self.update_status(f"Error while updating the list: {str(e)}")
 
     def scrape_new_data(self):
         """Scrape new cryptocurrency data"""
         try:
-            self.update_status("Συλλογή νέων δεδομένων...")
+            self.update_status("Scraping new data...")
             self.scrape_btn.config(state='disabled')
 
             # Scrape new data
@@ -524,15 +526,15 @@ class CryptocurrencyGUI:
                 self.populate_data_table()
                 self.update_coin_dropdown()
                 self.coin_dropdown.set('')  # Clear selection to show all coins
-                self.update_status("Νέα δεδομένα συλλέχθηκαν επιτυχώς!")
-                messagebox.showinfo("Επιτυχία", "Τα νέα δεδομένα συλλέχθηκαν επιτυχώς!")
+                self.update_status("New data successfully scraped")
+                messagebox.showinfo("Success", "Scrape successful!")
             else:
-                self.update_status("Αποτυχία συλλογής δεδομένων")
-                messagebox.showerror("Σφάλμα", "Αποτυχία συλλογής δεδομένων. Παρακαλώ δοκιμάστε ξανά.")
+                self.update_status("Fail during scraping")
+                messagebox.showerror("Error", "An error occurred. Please try again.")
 
         except Exception as e:
-            self.update_status(f"Σφάλμα κατά τη συλλογή δεδομένων: {str(e)}")
-            messagebox.showerror("Σφάλμα", f"Σφάλμα κατά τη συλλογή δεδομένων:\n{str(e)}")
+            self.update_status(f"An error occurred: {str(e)}")
+            messagebox.showerror("Error", f"Fail during scraping:\n{str(e)}")
 
         finally:
             self.scrape_btn.config(state='normal')
@@ -541,49 +543,11 @@ class CryptocurrencyGUI:
         """Export current data to CSV"""
         try:
             export_to_csv()
-            self.update_status("Δεδομένα εξήχθησαν στο CSV αρχείο")
-            messagebox.showinfo("Επιτυχία", "Τα δεδομένα εξήχθησαν επιτυχώς στο CSV αρχείο!")
+            self.update_status("Data was exported to .csv file")
+            messagebox.showinfo("Success", "Data successfully exported to .csv file!")
         except Exception as e:
-            self.update_status(f"Σφάλμα κατά την εξαγωγή: {str(e)}")
-            messagebox.showerror("Σφάλμα", f"Σφάλμα κατά την εξαγωγή δεδομένων:\n{str(e)}")
-
-    def export_custom_csv(self):
-        """Export data to a custom location"""
-        try:
-            if self.current_data is None:
-                messagebox.showwarning("Προειδοποίηση", "Δεν υπάρχουν δεδομένα για εξαγωγή!")
-                return
-
-            # Ask user for file location
-            file_path = filedialog.asksaveasfilename(
-                defaultextension=".csv",
-                filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
-                title="Αποθήκευση CSV αρχείου"
-            )
-
-            if file_path:
-                # Get latest data
-                latest_data = self.current_data.tail(10)
-                latest_data.to_csv(file_path, index=False)
-                self.update_status(f"Δεδομένα εξήχθησαν στο: {file_path}")
-                messagebox.showinfo("Επιτυχία", f"Τα δεδομένα αποθηκεύτηκαν επιτυχώς στο:\n{file_path}")
-
-        except Exception as e:
-            self.update_status(f"Σφάλμα κατά την προσαρμοσμένη εξαγωγή: {str(e)}")
-            messagebox.showerror("Σφάλμα", f"Σφάλμα κατά την εξαγωγή:\n{str(e)}")
-
-    def refresh_data_table(self):
-        """Refresh the data table with latest data from CSV"""
-        try:
-            self.current_data = read_csv_data()
-            if self.current_data is not None:
-                self.populate_data_table()
-                self.update_coin_dropdown()
-                self.update_status("Πίνακας δεδομένων ανανεώθηκε")
-            else:
-                self.update_status("Δεν βρέθηκαν δεδομένα για ανανέωση")
-        except Exception as e:
-            self.update_status(f"Σφάλμα κατά την ανανέωση: {str(e)}")
+            self.update_status(f"Error: {str(e)}")
+            messagebox.showerror("Error", f"Error occurred while exporting to .csv file:\n{str(e)}")
 
     def show_bar_chart(self):
         show_barchart()
@@ -599,13 +563,7 @@ class CryptocurrencyGUI:
         self.status_bar.config(text=message)
         self.root.update_idletasks()
 
-
-def main():
-    """Main function to run the application"""
+if __name__ == "__main__":
     root = tk.Tk()
     app = CryptocurrencyGUI(root)
     root.mainloop()
-
-
-if __name__ == "__main__":
-    main()
