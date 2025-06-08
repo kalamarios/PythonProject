@@ -303,7 +303,7 @@ class CryptocurrencyGUI:
 
 
         # Add welcome message
-        self.add_chat_message("🤖 Assistant",
+        self.add_chat_message("🤖 Bot",
                              "Hi! I'm your cryptocurrency assistant. Ask me anything about crypto, prices, investment advice, or how to use this application!")
 
     def add_chat_message(self, sender, message):
