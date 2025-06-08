@@ -271,7 +271,7 @@ class CryptocurrencyGUI:
         )
         self.send_btn.pack(side=tk.RIGHT)
 
-        # Bind Enter key to send message
+        # Enter key to send message
         self.chat_input.bind('<Return>', lambda event: self.send_message())
 
         # Control buttons frame
@@ -290,15 +290,6 @@ class CryptocurrencyGUI:
             padx=10
         )
         self.clear_chat_btn.pack(side=tk.LEFT, padx=(0, 10))
-
-        # Quick questions frame
-        quick_frame = tk.LabelFrame(
-            chat_main_frame,
-            text="Quick Questions",
-            font=("Arial", 11, "bold"),
-            bg='#f0f0f0'
-        )
-        quick_frame.pack(fill=tk.X, pady=(10, 0))
 
 
 
@@ -378,11 +369,11 @@ class CryptocurrencyGUI:
         # Create Treeview
         self.tree = ttk.Treeview(tree_frame, show='headings', height=15)
 
-        # Define columns to match the actual CSV column names and order
+
         columns = ['#', 'Coin', 'Price', '24h', '1h', '7d', 'Market Cap', '24h Volume', 'Timestamp']
         self.tree['columns'] = columns
 
-        # Configure column headings and widths
+        # column headings and widths
         column_widths = {
             '#': 50,
             'Coin': 100,
